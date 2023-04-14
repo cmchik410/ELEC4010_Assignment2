@@ -74,7 +74,7 @@ class ResNet50(nn.Module):
         self.flatten = nn.Flatten()
         self.fc1 = nn.Linear(2048, n_classes)
         
-        self.act = nn.Sigmoid()
+        self.act = nn.Softmax()
 
     
     def forward(self, x):

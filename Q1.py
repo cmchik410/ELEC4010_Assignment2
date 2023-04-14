@@ -9,15 +9,12 @@ from torch.utils.data import DataLoader
 from torchsummary import summary
 
 from utils.train1 import training
-from utils.test1 import testing
 from net.resnet import ResNet50
 from utils.data_utils import ISBI2016
 from metrics.metrics import error
 
 
 def main(**kwarg):
-    print(f"PyTorch version: {torch.__version__}")
-
     # Check PyTorch has access to MPS (Metal Performance Shader, Apple's GPU architecture)
     device = "cpu"
     if torch.backends.mps.is_built() and torch.backends.mps.is_available():
@@ -52,7 +49,7 @@ def main(**kwarg):
     ISBI_train = ISBI2016(root_dir = root_dir,
                           split = train_dir,
                           csv_file = train_label_file,
-                          balanced = False,
+                          balanced = True,
                           label_dict = label_dict,
                           transform = transform
                           )
@@ -60,7 +57,7 @@ def main(**kwarg):
     ISBI_test = ISBI2016(root_dir = root_dir,
                           split = test_dir,
                           csv_file = test_label_file,
-                          balanced = False,
+                          balanced = True,
                           label_dict = None,
                           transform = transform
                           )
@@ -76,9 +73,7 @@ def main(**kwarg):
     model = ResNet50(channels, n_classes).to(device)
     #summary(model, input_data = img_shape)
     loss_fcn = nn.CrossEntropyLoss()
-    loss_fcn = nn.BCELoss()
     optimizer = torch.optim.SGD(model.parameters(), lr = lr, momentum = momentum)
-    #optimizer = torch.optim.Adam(model.parameters(), lr = lr)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', factor = 0.8, patience = 2, verbose = True)
     metrics = error
 

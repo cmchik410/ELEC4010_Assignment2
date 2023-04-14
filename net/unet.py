@@ -59,7 +59,7 @@ class uNet(nn.Module):
         self.maxPool = nn.MaxPool2d(2)
         self.drop = nn.Dropout2d(0.5)
         self.relu = nn.ReLU()
-        self.sigmoid = nn.Sigmoid()
+        self.act = nn.Softmax(dim = 1)
 
 
     def forward(self, x):
@@ -82,7 +82,7 @@ class uNet(nn.Module):
         x = self.up4(c1, x)
         
         x = self.relu(self.conv1(x))
-        x = self.sigmoid(self.conv2(x))
+        x = self.act(self.conv2(x))
 
         return x
     

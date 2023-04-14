@@ -8,14 +8,24 @@ from torchvision import transforms
 from torchsummary import summary
 from torch.utils.data import DataLoader
 
+from utils.encoder import Q2_encoder
 from utils.data_utils import MRI
 from utils.train2 import training
 from net.unet import uNet
 
+from torchmetrics import Dice, JaccardIndex
 from medpy.metric.binary import dc, jc, asd, hd95
 
 
 def main(**kwargs):
+    # Check PyTorch has access to MPS (Metal Performance Shader, Apple's GPU architecture)
+    device = "cpu"
+    if torch.backends.mps.is_built() and torch.backends.mps.is_available():
+        device = "mps"
+    elif torch.cuda.is_available():
+        device = "cuda"
+    print(f"Using device: {device}")
+
     root_dir = kwargs["root_dir"]
     train_csv_file = kwargs["train_csv_file"]
     test_csv_file = kwargs["test_csv_file"]
@@ -45,15 +55,18 @@ def main(**kwargs):
 
     test_loader = DataLoader(dataset = MRI_test, batch_size = batch_size, shuffle = True)
 
-    model = uNet(channels, n_classes)
+    dice = Dice()
+    jacc = JaccardIndex('multiclass', num_classes = 2)
+    model = uNet(channels, n_classes).to(device)
     #summary(model, input_data = img_shape)
-
-    loss_fcn = nn.BCELoss()
-    #optimizer = torch.optim.SGD(model.parameters(), lr = lr, momentum = momentum)
-    optimizer = torch.optim.Adam(model.parameters(), lr = lr)
+    loss_fcn = nn.CrossEntropyLoss()
+    optimizer = torch.optim.SGD(model.parameters(), lr = lr, momentum = momentum)
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', factor = 0.8, patience = 2, verbose = True)
+    #optimizer = torch.optim.Adam(model.parameters(), lr = lr)
     metrics = [dc, jc, asd, hd95]
+    encoder = Q2_encoder
 
-    model, history = training(model, train_loader, test_loader, loss_fcn, optimizer, epochs, metrics) 
+    model, history = training(model, train_loader, test_loader, loss_fcn, optimizer, scheduler, epochs, metrics, encoder, device) 
     
     torch.save(model.state_dict(), save_model_path)
 

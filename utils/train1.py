@@ -22,13 +22,16 @@ def training(model, train_loader, test_loader, loss_fcn, optimizer, scheduler, e
     for epoch in range(epochs):
         model.train(True)
         
-        progBar = tqdm(train_loader, nrows = 4)
+        progBar = tqdm(train_loader)
         
         train_loss = 0
         train_acc = 0     
 
         for i, data in enumerate(progBar, start = 1):
-            X_batch, y_true = data["image"].to(device), data["label"].to(device)
+            X_batch, y_true = data["image"], data["label"].reshape(-1)
+
+            X_batch = X_batch.to(device)
+            y_true = y_true.to(device)
 
             optimizer.zero_grad()
 

@@ -2,7 +2,7 @@ import numpy as np
 from tqdm import tqdm
 
 
-def testing(model, data_loader, loss_fcn, metrics):
+def testing(model, data_loader, loss_fcn, metrics, encoder, device):
     model.train(False)
     
     progBar = tqdm(data_loader)
@@ -12,14 +12,20 @@ def testing(model, data_loader, loss_fcn, metrics):
     test_loss = 0  
     
     for i, data in enumerate(progBar, start = 1):
-        X_batch, y_true = data["image"], data["label"]
+        X_batch, y_true = data["image"].to(device), data["label"].to(device)
         
         y_pred = model(X_batch)
+
+        y_true = encoder(y_true)
         
         loss = loss_fcn(y_pred, y_true)
         
-        y_pred = y_pred.detach().numpy()
-        y_true = y_true.detach().numpy()
+        y_pred = y_pred.detach().cpu().numpy()
+        y_pred = np.argmax(y_pred, axis = 1)
+        y_true = y_true.detach().cpu().numpy()
+
+        y_pred = 1 - y_pred
+        y_true = 1 - y_true
         
         acc0 = metrics[0](y_pred, y_true)
         acc1 = metrics[1](y_pred, y_true)

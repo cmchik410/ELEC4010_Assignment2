@@ -9,7 +9,7 @@ def testing(model, data_loader, loss_fcn, metrics, device):
     
     model.train(False)
     
-    progBar = tqdm(data_loader, nrows = 4)
+    progBar = tqdm(data_loader)
     
     test_loss = 0
     test_acc = 0
@@ -18,7 +18,10 @@ def testing(model, data_loader, loss_fcn, metrics, device):
     auroc = AUROC(task = "multiclass", num_classes = 2)
     
     for i, data in enumerate(progBar, start = 1):
-        X_batch, y_true = data["image"].to(device), data["label"].reshape(-1).to(device)
+        X_batch, y_true = data["image"], data["label"].reshape(-1)
+
+        X_batch = X_batch.to(device)
+        y_true = y_true.to(device)
         
         y_pred = model(X_batch)
         

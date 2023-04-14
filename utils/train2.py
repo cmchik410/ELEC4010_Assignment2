@@ -3,7 +3,7 @@ from tqdm import tqdm
 
 from utils.test2 import testing
 
-def training(model, train_loader, test_loader, loss_fcn, optimizer, epochs, metrics):
+def training(model, train_loader, test_loader, loss_fcn, optimizer, scheduler, epochs, metrics, encoder, device):
     
     print("\n Training \n" + "=" * 100)
     
@@ -20,15 +20,21 @@ def training(model, train_loader, test_loader, loss_fcn, optimizer, epochs, metr
         progBar = tqdm(train_loader)
         
         train_loss = 0
+
+        best_acc = 0
+
+        best_model = None
         
         acc_dict = {"dice" : 0, "jaccard" : 0, "asd" : 0, "hd95" : 0}   
 
         for i, data in enumerate(progBar, start = 1):
-            X_batch, y_true = data["image"], data["label"]
+            X_batch, y_true = data["image"].to(device), data["label"].to(device)
 
             optimizer.zero_grad()
 
             y_pred = model(X_batch)
+
+            y_true = encoder(y_true)
             
             loss = loss_fcn(y_pred, y_true)
 
@@ -37,10 +43,14 @@ def training(model, train_loader, test_loader, loss_fcn, optimizer, epochs, metr
             optimizer.step()
             
             train_loss = (train_loss * (i - 1) + loss.item()) / i
-            
-            y_pred = y_pred.detach().numpy()
-            y_true = y_true.detach().numpy()
-            
+
+            y_pred = y_pred.detach().cpu().numpy()
+            y_pred = np.argmax(y_pred, axis = 1)
+            y_true = y_true.detach().cpu().numpy()
+
+            y_pred = 1 - y_pred
+            y_true = 1 - y_true
+
             acc0 = metrics[0](y_pred, y_true)
             acc1 = metrics[1](y_pred, y_true)
             acc2 = metrics[2](y_pred, y_true)
@@ -56,14 +66,24 @@ def training(model, train_loader, test_loader, loss_fcn, optimizer, epochs, metr
             progBar.set_postfix(train_loss = train_loss, dice = acc_dict["dice"], jaccard = acc_dict["jaccard"],
                                 ASD = acc_dict["asd"], HD95 = acc_dict["hd95"])
             
-        test_loss, test_acc = testing(model, test_loader, loss_fcn, metrics)
+        test_loss, test_acc = testing(model, test_loader, loss_fcn, metrics, encoder, device)
         
         train_loss_dict[epoch] = train_loss
         train_acc_dict[epoch] = acc_dict
         test_loss_dict[epoch] = test_loss
         test_acc_dict[epoch] = test_acc
         
-        print()   
+        print()
+
+        scheduler.step(test_acc["jaccard"])
+
+        if test_acc["jaccard"] > best_acc:
+            best_acc = test_acc_dict["jaccard"]
+            best_model = model
+        else:
+            model = best_model
+
+        print()
         
     history["train_loss"] = train_loss_dict
     history["train_acc"] = train_acc_dict
