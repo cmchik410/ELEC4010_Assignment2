@@ -1,0 +1,12 @@
+root_dir : datasets/MRI
+train_csv_file : Training_data.csv
+test_csv_file : Testing_data.csv
+dimensions : [256, 256]
+channels : 3
+n_classes : 2
+loss_fcn : cross
+epochs : 1
+batch_size : 16
+learning_rate : 0.01
+momentum : 0.9
+save_model_path : models/Q2_trained_cross
