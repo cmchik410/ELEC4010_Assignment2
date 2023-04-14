@@ -3,7 +3,7 @@ train_csv_file : Training_data.csv
 test_csv_file : Testing_data.csv
 dimensions : [256, 256]
 channels : 3
-n_classes : 2
+n_classes : 1
 loss_fcn : cross
 epochs : 1
 batch_size : 16

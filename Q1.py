@@ -22,9 +22,10 @@ def main(**kwarg):
     device = "cpu"
     if torch.backends.mps.is_built() and torch.backends.mps.is_available():
         device = "mps"
-
+    elif torch.cuda.is_available():
+        device = "cuda"
     print(f"Using device: {device}")
-
+    
     root_dir = kwargs["root_dir"]
     train_dir = kwargs["train_dir"]
     train_label_file = kwargs["train_label_file"]
@@ -75,6 +76,7 @@ def main(**kwarg):
     model = ResNet50(channels, n_classes).to(device)
     #summary(model, input_data = img_shape)
     loss_fcn = nn.CrossEntropyLoss()
+    loss_fcn = nn.BCELoss()
     optimizer = torch.optim.SGD(model.parameters(), lr = lr, momentum = momentum)
     #optimizer = torch.optim.Adam(model.parameters(), lr = lr)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', factor = 0.8, patience = 2, verbose = True)

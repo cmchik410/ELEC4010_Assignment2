@@ -28,7 +28,7 @@ def training(model, train_loader, test_loader, loss_fcn, optimizer, scheduler, e
         train_acc = 0     
 
         for i, data in enumerate(progBar, start = 1):
-            X_batch, y_true = data["image"].to(device), data["label"].reshape(-1).to(device)
+            X_batch, y_true = data["image"].to(device), data["label"].to(device)
 
             optimizer.zero_grad()
 

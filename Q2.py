@@ -9,12 +9,11 @@ from torchsummary import summary
 from torch.utils.data import DataLoader
 
 from utils.data_utils import MRI
-from utils.encoder import Q2_encoder
 from utils.train2 import training
 from net.unet import uNet
 
-from medpy.metric.binary import dc
-from medpy.metric.binary import jc, asd, hd
+from medpy.metric.binary import dc, jc, asd, hd95
+
 
 def main(**kwargs):
     root_dir = kwargs["root_dir"]
@@ -23,7 +22,7 @@ def main(**kwargs):
     dimensions = kwargs["dimensions"]
     channels = kwargs["channels"]
     n_classes = kwargs["n_classes"]
-    loss_name = kwargs["loss_fcn"]
+
     epochs = kwargs["epochs"]
     batch_size = kwargs["batch_size"]
     lr = kwargs["learning_rate"]
@@ -49,13 +48,12 @@ def main(**kwargs):
     model = uNet(channels, n_classes)
     #summary(model, input_data = img_shape)
 
-    loss_fcn = nn.CrossEntropyLoss()
-    optimizer = torch.optim.SGD(model.parameters(), lr = lr, momentum = momentum)
-    metrics = [dc, jc, asd, hd] 
-    encoder = Q2_encoder
+    loss_fcn = nn.BCELoss()
+    #optimizer = torch.optim.SGD(model.parameters(), lr = lr, momentum = momentum)
+    optimizer = torch.optim.Adam(model.parameters(), lr = lr)
+    metrics = [dc, jc, asd, hd95]
 
-    model, history = training(model, train_loader, test_loader, batch_size, n_classes, 
-                                          loss_fcn, optimizer, epochs, metrics, encoder) 
+    model, history = training(model, train_loader, test_loader, loss_fcn, optimizer, epochs, metrics) 
     
     torch.save(model.state_dict(), save_model_path)
 

@@ -3,8 +3,7 @@ from tqdm import tqdm
 
 from utils.test2 import testing
 
-def training(model, train_loader, test_loader, batch_size, n_classes, 
-             loss_fcn, optimizer, epochs, metrics, encoder):
+def training(model, train_loader, test_loader, loss_fcn, optimizer, epochs, metrics):
     
     print("\n Training \n" + "=" * 100)
     
@@ -22,7 +21,7 @@ def training(model, train_loader, test_loader, batch_size, n_classes,
         
         train_loss = 0
         
-        temp_acc_dict = {"dice" : 0, "jaccard" : 0, "asd" : 0, "hd" : 0}   
+        acc_dict = {"dice" : 0, "jaccard" : 0, "asd" : 0, "hd95" : 0}   
 
         for i, data in enumerate(progBar, start = 1):
             X_batch, y_true = data["image"], data["label"]
@@ -30,8 +29,6 @@ def training(model, train_loader, test_loader, batch_size, n_classes,
             optimizer.zero_grad()
 
             y_pred = model(X_batch)
-            
-            y_true = encoder(y_true)
             
             loss = loss_fcn(y_pred, y_true)
 
@@ -42,28 +39,27 @@ def training(model, train_loader, test_loader, batch_size, n_classes,
             train_loss = (train_loss * (i - 1) + loss.item()) / i
             
             y_pred = y_pred.detach().numpy()
-            y_pred = np.argmax(y_pred, axis = 1)
             y_true = y_true.detach().numpy()
             
-            acc1 = metrics[0](y_true, y_pred)
-            acc2 = metrics[1](y_true, y_pred)
-            acc3 = metrics[2](y_true, y_pred)
-            acc4 = metrics[3](y_true, y_pred)
+            acc0 = metrics[0](y_pred, y_true)
+            acc1 = metrics[1](y_pred, y_true)
+            acc2 = metrics[2](y_pred, y_true)
+            acc3 = metrics[3](y_pred, y_true)
         
-            temp_acc_dict["dice"] = (temp_acc_dict["dice"] * (i - 1) + acc1) / i
-            temp_acc_dict["jaccard"] = (temp_acc_dict["jaccard"] * (i - 1) + acc2) / i
-            temp_acc_dict["asd"] = (temp_acc_dict["asd"] * (i - 1) + acc3) / i
-            temp_acc_dict["hd"] = (temp_acc_dict["hd"] * (i - 1) + acc4) / i
+            acc_dict["dice"] = (acc_dict["dice"] * (i - 1) + acc0) / i
+            acc_dict["jaccard"] = (acc_dict["jaccard"] * (i - 1) + acc1) / i
+            acc_dict["asd"] = (acc_dict["asd"] * (i - 1) + acc2) / i
+            acc_dict["hd95"] = (acc_dict["hd95"] * (i - 1) + acc3) / i
                 
             progBar.set_description("Epoch [%d / %d]" % (epoch + 1, epochs))
         
-            progBar.set_postfix(train_loss = train_loss, dice_loss = temp_acc_dict["dice"], 
-                                jaccard = temp_acc_dict["jaccard"], asd = temp_acc_dict["asd"], hd = temp_acc_dict["hd"])
+            progBar.set_postfix(train_loss = train_loss, dice = acc_dict["dice"], jaccard = acc_dict["jaccard"],
+                                ASD = acc_dict["asd"], HD95 = acc_dict["hd95"])
             
-        test_loss, test_acc = testing(model, test_loader, n_classes, loss_fcn, metrics, encoder)
+        test_loss, test_acc = testing(model, test_loader, loss_fcn, metrics)
         
         train_loss_dict[epoch] = train_loss
-        train_acc_dict[epoch] = temp_acc_dict
+        train_acc_dict[epoch] = acc_dict
         test_loss_dict[epoch] = test_loss
         test_acc_dict[epoch] = test_acc
         

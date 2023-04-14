@@ -77,7 +77,9 @@ class ISBI2016(Dataset):
 
         label = np.array(label).reshape(-1)
         
-        label = torch.Tensor(label).long()
+        label = torch.Tensor(label)
+        
+        label = label.type(torch.FloatTensor)
 
         sample = {"image" : img, "label" : label}
 
@@ -111,7 +113,7 @@ class MRI(Dataset):
 
         label = transforms.ToTensor()(label)
         
-        label = label.type(torch.LongTensor)
+        label = label.type(torch.FloatTensor)
         
         if self.transform:
             img = self.transform(img)

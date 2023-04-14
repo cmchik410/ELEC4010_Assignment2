@@ -37,9 +37,5 @@ def testing(model, data_loader, loss_fcn, metrics, device):
         
         progBar.set_description("Testing: ")
         progBar.set_postfix(test_loss = test_loss, test_acc = test_acc, auc = AUC)
-    
-        
-
-
 
     return test_loss, test_acc, AUC
