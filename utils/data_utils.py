@@ -30,7 +30,7 @@ class ISBI2016(Dataset):
         
         if self.balanced:
             malignant = malignant.tolist()
-            for i in range(N1 // 2 - N2):
+            for i in range(int(N1 * 0.7) - N2):
                 rand_idx = np.random.randint(0, N2)
                 malignant.append(malignant[rand_idx])
                 
@@ -52,8 +52,12 @@ class ISBI2016(Dataset):
         
         img = np.array(img)
 
-        flip = np.random.random() / 2
-        contrast = np.random.random() / 5 
+        flip = 0.0
+        contrast = 0.0
+        if self.split == "training":
+            flip = np.random.random() / 2
+            contrast = np.random.random() / 5 
+            
         trans = A.Compose([
             A.Resize(width = 244, height = 244),
             A.RandomCrop(width = 224, height = 224),

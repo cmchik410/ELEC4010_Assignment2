@@ -1,4 +1,3 @@
-from sys import float_repr_style
 import yaml
 import json
 import argparse
@@ -17,6 +16,15 @@ from metrics.metrics import error
 
 
 def main(**kwarg):
+    print(f"PyTorch version: {torch.__version__}")
+
+    # Check PyTorch has access to MPS (Metal Performance Shader, Apple's GPU architecture)
+    device = "cpu"
+    if torch.backends.mps.is_built() and torch.backends.mps.is_available():
+        device = "mps"
+
+    print(f"Using device: {device}")
+
     root_dir = kwargs["root_dir"]
     train_dir = kwargs["train_dir"]
     train_label_file = kwargs["train_label_file"]
@@ -64,15 +72,15 @@ def main(**kwarg):
                              batch_size = batch_size,
                              shuffle = True)
     
-    model = ResNet50(channels, n_classes)
+    model = ResNet50(channels, n_classes).to(device)
     #summary(model, input_data = img_shape)
-    weights = torch.tensor([0.3, 0.7])
-    loss_fcn = nn.CrossEntropyLoss(weight = weights)
+    loss_fcn = nn.CrossEntropyLoss()
     optimizer = torch.optim.SGD(model.parameters(), lr = lr, momentum = momentum)
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', factor = 0.9, patience = 2, verbose = True)
+    #optimizer = torch.optim.Adam(model.parameters(), lr = lr)
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', factor = 0.8, patience = 2, verbose = True)
     metrics = error
 
-    model, history = training(model, train_loader, test_loader, loss_fcn, optimizer, scheduler, epochs, metrics)
+    model, history = training(model, train_loader, test_loader, loss_fcn, optimizer, scheduler, epochs, metrics, device)
 
     torch.save(model.state_dict(), save_model_path)
 
