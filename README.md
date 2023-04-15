@@ -25,7 +25,7 @@ https://isic-challenge-data.s3.amazonaws.com/2016/ISBI2016_ISIC_Part3_Test_Groun
 The dataset used in task 2 could be downloaded at 
 https://drive.google.com/file/d/1166Qg5U807OpQGhZ2oz4l6C2jAsoU3Ts/view
 
-$ tree
+```bash
 datasets
 ├── ISBI2016
 │   ├── testing
@@ -36,22 +36,7 @@ datasets
 |   └── train_label.csv
 |   MRI
 └── └── ...
-
-$ ./tree-md .
-# Project tree
-
-.
- * [tree-md](./tree-md)
- * [dir2](./dir2)
-   * [file21.ext](./dir2/file21.ext)
-   * [file22.ext](./dir2/file22.ext)
-   * [file23.ext](./dir2/file23.ext)
- * [dir1](./dir1)
-   * [file11.ext](./dir1/file11.ext)
-   * [file12.ext](./dir1/file12.ext)
- * [file_in_root.ext](./file_in_root.ext)
- * [README.md](./README.md)
- * [dir3](./dir3)
+```
 
 
 ## Requirement
