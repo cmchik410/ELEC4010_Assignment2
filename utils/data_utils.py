@@ -95,7 +95,7 @@ class MRI(Dataset):
         self.labelframe = pd.read_csv(os.path.join(root_dir, csv_file), header = 0)
         self.transform = transform
         
-        self.all_files = []
+        temp_files = []
         for i in self.labelframe["Patient"]:
             temp = glob.glob((os.path.join(root_dir, i) + "*/*[!_mask].tif"))
 
@@ -104,6 +104,15 @@ class MRI(Dataset):
             temp = sorted(temp, key = lambda x : int(x.split('_')[-1]))
             
             for i in temp:
+                temp_files.append(i)
+        
+        self.all_files = [] 
+        for i in temp_files:
+            label = Image.open(i + "_mask.tif").convert("1")
+            label = np.array(label)
+            if np.count_nonzero(label) == 0:
+                continue
+            else:
                 self.all_files.append(i)
         
     def __getitem__(self, idx):  

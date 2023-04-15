@@ -5,17 +5,14 @@ import torch
 
 from torch import nn
 from torchvision import transforms
-from torchsummary import summary
 from torch.utils.data import DataLoader
 
 from utils.encoder import Q2_encoder
 from utils.data_utils import MRI
 from utils.train2 import training
-from net.unet import uNet
+from net.unet import UNet
 
-from torchmetrics import Dice, JaccardIndex
 from medpy.metric.binary import dc, jc, asd, hd95
-
 
 def main(**kwargs):
     # Check PyTorch has access to MPS (Metal Performance Shader, Apple's GPU architecture)
@@ -54,14 +51,12 @@ def main(**kwargs):
     train_loader = DataLoader(dataset = MRI_train, batch_size = batch_size, shuffle = True)
 
     test_loader = DataLoader(dataset = MRI_test, batch_size = batch_size, shuffle = True)
-
-    dice = Dice()
-    jacc = JaccardIndex('multiclass', num_classes = 2)
-    model = uNet(channels, n_classes).to(device)
+    
+    model = UNet(channels, n_classes).to(device)
     #summary(model, input_data = img_shape)
     loss_fcn = nn.CrossEntropyLoss()
-    optimizer = torch.optim.SGD(model.parameters(), lr = lr, momentum = momentum)
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', factor = 0.8, patience = 2, verbose = True)
+    optimizer = torch.optim.Adam(model.parameters(), lr = lr)
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', factor = 0.9, patience = 2, verbose = True)
     #optimizer = torch.optim.Adam(model.parameters(), lr = lr)
     metrics = [dc, jc, asd, hd95]
     encoder = Q2_encoder
@@ -77,7 +72,7 @@ def main(**kwargs):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description = "ELEC4010 Assigment 2 Q2")
 
-    parser.add_argument("--cfg", default = "configs/Q2_cross.yaml", help = "path to Q2 config file", type = str)
+    parser.add_argument("--cfg", default = "configs/Q2.yaml", help = "path to Q2 config file", type = str)
 
     args = parser.parse_args()
 

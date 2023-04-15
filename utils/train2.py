@@ -1,4 +1,5 @@
 import numpy as np
+import torch
 from tqdm import tqdm
 
 from utils.test2 import testing
@@ -25,16 +26,16 @@ def training(model, train_loader, test_loader, loss_fcn, optimizer, scheduler, e
 
         best_model = None
         
-        acc_dict = {"dice" : 0, "jaccard" : 0, "asd" : 0, "hd95" : 0}   
+        acc_dict = {"pix" : 0, "dice" : 0, "jaccard" : 0, "asd" : 0, "hd95" : 0}   
 
         for i, data in enumerate(progBar, start = 1):
             X_batch, y_true = data["image"].to(device), data["label"].to(device)
 
             optimizer.zero_grad()
 
-            y_pred = model(X_batch)
+            y_pred = model(X_batch) # 16, 2, 256, 256
 
-            y_true = encoder(y_true)
+            y_true = encoder(y_true) # 16, 256, 256
             
             loss = loss_fcn(y_pred, y_true)
 
@@ -44,18 +45,19 @@ def training(model, train_loader, test_loader, loss_fcn, optimizer, scheduler, e
             
             train_loss = (train_loss * (i - 1) + loss.item()) / i
 
+            y_pred = y_pred.permute(0, 2, 3, 1)
             y_pred = y_pred.detach().cpu().numpy()
-            y_pred = np.argmax(y_pred, axis = 1)
+            y_pred = np.argmax(y_pred, axis = -1)
             y_true = y_true.detach().cpu().numpy()
-
-            y_pred = 1 - y_pred
-            y_true = 1 - y_true
-
+            
+            acc = np.mean((y_pred == y_true) / 1.0)
+            
             acc0 = metrics[0](y_pred, y_true)
             acc1 = metrics[1](y_pred, y_true)
             acc2 = metrics[2](y_pred, y_true)
             acc3 = metrics[3](y_pred, y_true)
         
+            acc_dict["pix"] = (acc_dict["pix"] * (i - 1) + acc) / i
             acc_dict["dice"] = (acc_dict["dice"] * (i - 1) + acc0) / i
             acc_dict["jaccard"] = (acc_dict["jaccard"] * (i - 1) + acc1) / i
             acc_dict["asd"] = (acc_dict["asd"] * (i - 1) + acc2) / i
@@ -63,7 +65,7 @@ def training(model, train_loader, test_loader, loss_fcn, optimizer, scheduler, e
                 
             progBar.set_description("Epoch [%d / %d]" % (epoch + 1, epochs))
         
-            progBar.set_postfix(train_loss = train_loss, dice = acc_dict["dice"], jaccard = acc_dict["jaccard"],
+            progBar.set_postfix(train_loss = train_loss, accuracy = acc_dict["pix"], dice = acc_dict["dice"], jaccard = acc_dict["jaccard"],
                                 ASD = acc_dict["asd"], HD95 = acc_dict["hd95"])
             
         test_loss, test_acc = testing(model, test_loader, loss_fcn, metrics, encoder, device)
@@ -76,13 +78,7 @@ def training(model, train_loader, test_loader, loss_fcn, optimizer, scheduler, e
         print()
 
         scheduler.step(test_acc["jaccard"])
-
-        if test_acc["jaccard"] > best_acc:
-            best_acc = test_acc_dict["jaccard"]
-            best_model = model
-        else:
-            model = best_model
-
+        
         print()
         
     history["train_loss"] = train_loss_dict
